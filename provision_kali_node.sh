@@ -1,31 +1,25 @@
 #!/bin/bash
-# ZENITH-KALI PROVISIONER v2.5 (2025)
-# License: GNU GPL v3
+# ZENITH-KALI PROVISIONER v3.0 (Tested: Dec 2025)
 set -euo pipefail
 
 IMAGE="zenith-kali-node.ext4"
 SIZE="8G"
-
-echo "[*] Initializing ADRE Volume..."
-fallocate -l $SIZE $IMAGE
-mkfs.ext4 $IMAGE
-
-# Mounting and Populating
 MOUNT_DIR="/tmp/zenith-mnt"
-mkdir -p $MOUNT_DIR
-sudo mount $IMAGE $MOUNT_DIR
 
-echo "[*] Injecting Kali-Headless Suite and Zenith Core..."
-docker run --rm -v $MOUNT_DIR:/output kali-linux-headless:latest sh -c "
-    apt-get update && apt-get install -y kali-linux-headless mcp-kali-server python3-pip nmap sqlmap gobuster nikto
-    mkdir -p /output/opt/adre
+echo "[*] Building Hardened Kali Node..."
+fallocate -l $SIZE $IMAGE && mkfs.ext4 $IMAGE
+mkdir -p $MOUNT_DIR && sudo mount $IMAGE $MOUNT_DIR
+
+# Populate Toolset & Core Directories
+sudo docker run --rm -v $MOUNT_DIR:/output kali-linux-headless:latest sh -c "
+    apt-get update && apt-get install -y kali-linux-headless mcp-kali-server python3-pip nmap sqlmap
+    mkdir -p /output/opt/zenith /output/root/.ssh
 "
 
-# Copy Zenith components and requirements
-sudo cp zenith_core.py $MOUNT_DIR/opt/zenith/core.py
-sudo cp persistence_pod.py $MOUNT_DIR/opt/zenith/persistence.py
-sudo cp requirements.txt $MOUNT_DIR/opt/zenith/requirements.txt
-mkdir -p /output/root/.ssh && cp /host_path/id_rsa.pub /output/root/.ssh/authorized_keys
-echo "[*] Finalizing Immutable Layer..."
+# [FIX]: Synchronized Path & SSH Injection
+sudo cp mcp_executor.py $MOUNT_DIR/opt/zenith/executor.py
+sudo cp id_rsa.pub $MOUNT_DIR/root/.ssh/authorized_keys
+sudo chmod 600 $MOUNT_DIR/root/.ssh/authorized_keys
+
 sudo umount $MOUNT_DIR
-echo "[SUCCESS] Zenith-Kali node is ready for Ring-0 execution."
+echo "[SUCCESS] Zenith-Kali node built at /opt/zenith."
