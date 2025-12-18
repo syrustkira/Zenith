@@ -1,0 +1,32 @@
+{
+  "boot-source": {
+    "kernel_image_path": "vmlinux.bin",
+    "boot_args": "console=ttyS0 reboot=k panic=1 pci=off ip=172.16.0.2::172.16.0.1:255.255.255.0::eth0:off"
+  },
+  "drives": [
+    {
+      "drive_id": "rootfs",
+      "path_on_host": "zenith-kali-node.ext4",
+      "is_root_device": true,
+      "is_read_only": false
+    }
+  ],
+  "network-interfaces": [
+    {
+      "iface_id": "eth0",
+      "guest_mac": "AA:FC:00:00:00:01",
+      "host_dev_name": "tap0"
+    }
+  ],
+  "machine-config": {
+    "vcpu_count": 2,
+    "mem_size_mib": 1024,
+    "ht_enabled": false
+  },
+  "logger": {
+    "log_path": "logs/firecracker.log",
+    "level": "Info",
+    "show_level": true,
+    "show_log_origin": true
+  }
+}

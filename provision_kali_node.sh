@@ -25,7 +25,7 @@ docker run --rm -v $MOUNT_DIR:/output kali-linux-headless:latest sh -c "
 sudo cp zenith_core.py $MOUNT_DIR/opt/zenith/core.py
 sudo cp persistence_pod.py $MOUNT_DIR/opt/zenith/persistence.py
 sudo cp requirements.txt $MOUNT_DIR/opt/zenith/requirements.txt
-
+--ssh-inject root:file:id_rsa.pub
 echo "[*] Finalizing Immutable Layer..."
 sudo umount $MOUNT_DIR
 echo "[SUCCESS] Zenith-Kali node is ready for Ring-0 execution."
