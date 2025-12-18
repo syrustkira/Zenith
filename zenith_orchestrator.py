@@ -43,12 +43,14 @@ class ZenithKaliOrchestrator(ZenithArchitect):
         state = await self.hitl_alignment(state)
         
         if state["is_aligned"]:
-            # 3. PHASE 3: THE OODA BRAIN
-            print("[*] Phase 3: Engaging OODA Strategy Engine...")
-            # Load Tool context for the AI
-            with open("tools.json", "r") as f:
-                tool_context = f.read()
-            
+            while True: # ACTUAL OODA LOOP
+                ooda_action = await self.call_ai(ooda_directive, system_prompt)
+                if "TERMINATE" in ooda_action: break 
+                result = await self.execute_kali_task(ooda_action)
+                state["worker_results"].append(result)
+                # Pass result back to next AI context turn
+                ooda_directive += f"\nResult: {result}"
+                
             # Anchor reasoning to the specific target and toolbox
             system_prompt = self.l10_identity.format(target=state["target"])
             ooda_directive = f"Toolbox:\n{tool_context}\n\nMission: {state['sanitized_directive']}"
