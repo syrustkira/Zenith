@@ -4,38 +4,66 @@ from zenith_core import ZenithArchitect, AgentState
 from persistence_pod import PersistencePod
 
 class ZenithKaliOrchestrator(ZenithArchitect):
-    def __init__(self, target_ip="172.16.0.2"):
+    def __init__(self):
         super().__init__()
-        self.target_ip = target_ip
         self.persist = PersistencePod()
 
-    async def execute_kali_task(self, tool: str, args: list):
-        """Dispatches validated tool calls to the Ring-0 guest."""
-        payload = json.dumps({"tool": tool, "args": args})
-        # [FIX]: Path aligned with provisioner (/opt/zenith)
-        cmd = f"ssh -i id_rsa root@{self.target_ip} 'python3 /opt/zenith/executor.py \"{payload}\"'"
+    async def execute_kali_task(self, tool_json: str):
+        """Dispatches OODA-generated tool calls to the Ring-0 guest via SSH tunnel."""
+        # Sanitize tool_json to extract only the JSON object
+        json_match = re.search(r'\{.*\}', tool_json, re.DOTALL)
+        if not json_match:
+            return "ORCHESTRATOR_ERROR: No valid JSON-RPC tool call found."
+        
+        payload = json_match.group()
+        # [L10 HARDENING]: Path standard for v3.0 nodes
+        cmd = f"ssh -i id_rsa root@172.16.0.2 'python3 /opt/zenith/executor.py \"{payload}\"'"
+        
         proc = await asyncio.create_subprocess_shell(
             cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
         stdout, stderr = await proc.communicate()
-        return {"stdout": stdout.decode(), "stderr": stderr.decode()}
+        return stdout.decode() if stdout else stderr.decode()
 
-    async def autonomous_research_cycle(self, raw_intent: str):
-        """Covers 'previous chat capabilities' by enabling high-intent directives."""
+    async def autonomous_research_cycle(self):
+        """Main OODA Loop Execution."""
+        # 1. INITIALIZE MISSION PARAMETERS
+        print("=== ZENITH RED-TEAM ORCHESTRATOR v3.5 ===")
         state: AgentState = {
-            "raw_thought": raw_intent,
+            "target": input("[Target IP/Range] > "),
+            "raw_thought": input("[Mission Intent] > "),
             "sanitized_directive": "",
             "worker_results": [],
             "session_logs": [],
             "is_aligned": False
         }
-        # Step 1-2: PII Scrubber & HITL Gate
+
+        # 2. PHASE 1-2: COMPLIANCE GATING
         state = await self.sanitization_gate(state)
         state = await self.hitl_alignment(state)
         
         if state["is_aligned"]:
-            # Step 3: Execution inside the Firecracker KVM
-            result = await self.execute_kali_task("nmap", ["-sV", self.target_ip])
-            state["worker_results"].append(result["stdout"])
-            # Step 4: Archive session metadata
-            await self.commit_session(state)
+            # 3. PHASE 3: THE OODA BRAIN
+            print("[*] Phase 3: Engaging OODA Strategy Engine...")
+            # Load Tool context for the AI
+            with open("tools.json", "r") as f:
+                tool_context = f.read()
+            
+            # Anchor reasoning to the specific target and toolbox
+            system_prompt = self.l10_identity.format(target=state["target"])
+            ooda_directive = f"Toolbox:\n{tool_context}\n\nMission: {state['sanitized_directive']}"
+            
+            # The AI generates a JSON-RPC payload based on its OODA strategy
+            ooda_action = await self.call_ai(ooda_directive, system_prompt)
+            
+            # 4. PHASE 4: EXECUTION & PERSISTENCE
+            result = await self.execute_kali_task(ooda_action)
+            state["worker_results"].append(result)
+            
+            print("\n[ACTION RESULT]:\n", result)
+            # Sync to local and cloud vaults
+            # await self.commit_session(state)
+
+if __name__ == "__main__":
+    orch = ZenithKaliOrchestrator()
+    asyncio.run(orch.autonomous_research_cycle())

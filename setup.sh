@@ -59,6 +59,14 @@ python3 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
+sudo apt update && sudo apt install -y qemu-utils libguestfs-tools bridge-utils python3-pip
+pip install scapy openai python-dotenv google-api-python-client firecracker-python -y
+
+sudo ip tuntap add dev tap0 mode tap
+sudo ip addr add 172.16.0.1/24 dev tap0
+sudo ip link set tap0 up
+# Enable NAT for external research if needed
+sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 
 # 6. Git Initialization
 echo "[*] Initializing Local Repository..."

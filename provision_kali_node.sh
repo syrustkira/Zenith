@@ -1,25 +1,21 @@
 #!/bin/bash
-# ZENITH-KALI PROVISIONER v3.0 (Tested: Dec 2025)
-set -euo pipefail
-
 IMAGE="zenith-kali-node.ext4"
-SIZE="8G"
 MOUNT_DIR="/tmp/zenith-mnt"
 
-echo "[*] Building Hardened Kali Node..."
-fallocate -l $SIZE $IMAGE && mkfs.ext4 $IMAGE
+# 1. Create and Format
+fallocate -l 8G $IMAGE && mkfs.ext4 $IMAGE
 mkdir -p $MOUNT_DIR && sudo mount $IMAGE $MOUNT_DIR
 
-# Populate Toolset & Core Directories
+# 2. Inject Kali Tools & Zenith Executor
+# We use a Docker volume to populate the raw disk
 sudo docker run --rm -v $MOUNT_DIR:/output kali-linux-headless:latest sh -c "
-    apt-get update && apt-get install -y kali-linux-headless mcp-kali-server python3-pip nmap sqlmap
+    apt-get update && apt-get install -y kali-linux-headless mcp-kali-server nmap sqlmap gobuster metasploit-framework python3
     mkdir -p /output/opt/zenith /output/root/.ssh
 "
 
-# [FIX]: Synchronized Path & SSH Injection
+# 3. Synchronize Paths & Inject SSH Keys
 sudo cp mcp_executor.py $MOUNT_DIR/opt/zenith/executor.py
 sudo cp id_rsa.pub $MOUNT_DIR/root/.ssh/authorized_keys
 sudo chmod 600 $MOUNT_DIR/root/.ssh/authorized_keys
 
 sudo umount $MOUNT_DIR
-echo "[SUCCESS] Zenith-Kali node built at /opt/zenith."

@@ -1,0 +1,24 @@
+{
+  "version": "2025.3",
+  "protocol": "JSON-RPC 2.0",
+  "tools": {
+    "nmap": {
+      "method": "nmap",
+      "description": "Network discovery and security auditing",
+      "params_schema": ["scan_type", "target", "options"],
+      "example": {"jsonrpc": "2.0", "method": "nmap", "params": ["-sV", "{target}", "--script=vuln"], "id": 1}
+    },
+    "sqlmap": {
+      "method": "sqlmap",
+      "description": "Automatic SQL injection and database takeover tool",
+      "params_schema": ["url", "technique", "options"],
+      "example": {"jsonrpc": "2.0", "method": "sqlmap", "params": ["-u", "http://{target}/api", "--batch", "--dbs"], "id": 2}
+    },
+    "gobuster": {
+      "method": "gobuster",
+      "description": "Tool used to discover hidden paths/files",
+      "params_schema": ["mode", "url", "wordlist"],
+      "example": {"jsonrpc": "2.0", "method": "gobuster", "params": ["dir", "-u", "http://{target}", "-w", "/usr/share/wordlists/dirb/common.txt"], "id": 3}
+    }
+  }
+}
